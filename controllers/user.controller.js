@@ -9,7 +9,8 @@ const asyncHandler = (fn) => (req, res, next) =>
 
 // ─── GET /api/users ────────────────────────────────────────────────────────────
 export const getUsers = asyncHandler(async (req, res) => {
-  const users = await userService.getAllUsers();
+  const { organization } = req.query;
+  const users = await userService.getAllUsers(organization);
   res.status(200).json({
     success: true,
     count: users.length,

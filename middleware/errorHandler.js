@@ -1,4 +1,4 @@
-/**
+  /**
  * Centralized Error Handler Middleware
  * Handles all errors thrown/passed via next(err) in controllers.
  */
@@ -92,8 +92,8 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Known operational error (thrown via AppError)
-  if (error.isOperational) {
-    return sendError(res, error.statusCode, error.message);
+  if (err.isOperational) {
+    return sendError(res, err.statusCode, err.message);
   }
 
   // Unknown / programming error — don't leak details in production
@@ -101,7 +101,7 @@ const errorHandler = (err, req, res, next) => {
     return sendError(res, 500, "Something went wrong. Please try again.");
   }
 
-  return sendError(res, error.statusCode || 500, error.message || "Internal Server Error");
+  return sendError(res, err.statusCode || 500, err.message || "Internal Server Error");
 };
 
 export default errorHandler;

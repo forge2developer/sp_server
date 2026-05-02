@@ -3,6 +3,11 @@ import bcrypt from "bcryptjs";
 
 const UserSchema = new mongoose.Schema(
   {
+    profile_id: {
+      type: Number,
+      unique: true,
+      sparse: true, // Allow nulls if not provided initially
+    },
     name: {
       type: String,
       required: [true, "Name is required"],
@@ -18,6 +23,11 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Please enter a valid email address"],
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -27,10 +37,15 @@ const UserSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ["user", "admin"],
-        message: "Role must be either 'user' or 'admin'",
+        values: ["user", "manager", "admin"],
+        message: "Role must be 'user', 'manager', or 'admin'",
       },
       default: "user",
+    },
+    organization: {
+      type: String,
+      trim: true,
+      default: "SP_PROMOTERS",
     },
     isActive: {
       type: Boolean,
@@ -53,17 +68,12 @@ const UserSchema = new mongoose.Schema(
 );
 
 // ─── Pre-save Hook: Hash Password ─────────────────────────────────────────────
-UserSchema.pre("save", async function (next) {
+UserSchema.pre("save", async function () {
   // Only hash when password field is actually modified
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password")) return;
 
-  try {
-    const salt = await bcrypt.genSalt(12);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // ─── Instance Method: Compare Password ────────────────────────────────────────

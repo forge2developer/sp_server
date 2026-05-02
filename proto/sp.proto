@@ -1,0 +1,198 @@
+syntax = "proto3";
+
+package sp;
+
+// ═══════════════════════════════════════════════════════════
+// User Service
+// ═══════════════════════════════════════════════════════════
+
+service UserService {
+  rpc GetUsers (GetUsersRequest) returns (GetUsersResponse);
+  rpc GetUser (GetUserRequest) returns (UserResponse);
+}
+
+message GetUsersRequest {
+  string organization = 1;
+}
+
+message GetUsersResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated UserData users = 3;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message UserResponse {
+  bool success = 1;
+  UserData user = 2;
+}
+
+message UserData {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string role = 5;
+  string organization = 6;
+  bool isActive = 7;
+  string createdAt = 8;
+  int32 profile_id = 9;
+  string updatedAt = 10;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Project Service
+// ═══════════════════════════════════════════════════════════
+
+service ProjectService {
+  rpc GetProjects (GetProjectsRequest) returns (GetProjectsResponse);
+  rpc GetProject (GetProjectRequest) returns (ProjectResponse);
+}
+
+message GetProjectsRequest {
+  string organization = 1;
+}
+
+message GetProjectsResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated ProjectData projects = 3;
+}
+
+message GetProjectRequest {
+  string organization = 1;
+  string id = 2;
+}
+
+message ProjectResponse {
+  bool success = 1;
+  ProjectData project = 2;
+}
+
+message ProjectData {
+  string id = 1;
+  int32 product_id = 2;
+  string organization = 3;
+  string property = 4;
+  string name = 5;
+  string location = 6;
+  repeated string layoutImages = 7;
+  string status = 8;
+  string createdAt = 9;
+  int32 phaseCount = 10;
+  int32 totalPlots = 11;
+  int32 bookedCount = 12;
+  int32 cornerPlots = 13;
+}
+// ═══════════════════════════════════════════════════════════
+// Campaign Service
+// ═══════════════════════════════════════════════════════════
+
+service CampaignService {
+  rpc GetCampaigns (GetCampaignsRequest) returns (GetCampaignsResponse);
+  rpc GetCampaign (GetCampaignRequest) returns (CampaignResponse);
+}
+
+message GetCampaignsRequest {
+  string organization = 1;
+}
+
+message GetCampaignsResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated CampaignData data = 3;
+}
+
+message GetCampaignRequest {
+  string id = 1;
+}
+
+message CampaignResponse {
+  bool success = 1;
+  CampaignData data = 2;
+}
+
+message CampaignData {
+  string id = 1;
+  string campaignName = 2;
+  string organization = 3;
+  string status = 4;
+  string createdAt = 5;
+  int32 sourceCount = 6;
+  int32 endpointCount = 7;
+  repeated SourceData sources = 8;
+}
+
+message SourceData {
+  string uuid = 1;
+  string sourceName = 2;
+  repeated SubSourceData subSources = 3;
+}
+
+message SubSourceData {
+  string uuid = 1;
+  string subSourceName = 2;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Automation Service (Lead Capture)
+// ═══════════════════════════════════════════════════════════
+
+service AutomationService {
+  rpc GetLeadCaptureConfigs (GetLeadCaptureConfigsRequest) returns (GetLeadCaptureConfigsResponse);
+  rpc GetLeadCaptureConfig (GetLeadCaptureConfigRequest) returns (LeadCaptureConfigResponse);
+}
+
+message GetLeadCaptureConfigsRequest {
+  string organization = 1;
+}
+
+message GetLeadCaptureConfigsResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated LeadCaptureConfigData data = 3;
+}
+
+message GetLeadCaptureConfigRequest {
+  string id = 1;
+}
+
+message LeadCaptureConfigResponse {
+  bool success = 1;
+  LeadCaptureConfigData data = 2;
+}
+
+message LeadCaptureConfigData {
+  string id = 1;
+  string name = 2;
+  string organization = 3;
+  string source = 4;
+  string status = 5;
+  string createdAt = 6;
+  string campaign_name = 7;
+  string sub_source = 8;
+  repeated string project_ids = 9;
+  repeated string selected_contact_fields = 10;
+  repeated KeyValue manual_contact_fields = 11;
+  repeated string selected_fields = 12;
+  repeated KeyValue manual_requirements = 13;
+  repeated AssignedPerson assigned_people = 14;
+}
+
+message AssignedPerson {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string role = 5;
+  string category = 6;
+  string type = 7;
+}
+
+message KeyValue {
+  string key = 1;
+  string value = 2;
+}
