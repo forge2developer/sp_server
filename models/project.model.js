@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 // ─── Plot Schema (Sub-document) ─────────────────────────────────────────────
 const PlotSchema = new mongoose.Schema(
@@ -40,8 +41,11 @@ const PhaseSchema = new mongoose.Schema(
 // ─── Project Schema (Main Document) ─────────────────────────────────────────
 const ProjectSchema = new mongoose.Schema(
   {
+    _id: {
+      type: String,
+      default: () => crypto.randomUUID(),
+    },
     product_id: { type: Number, required: true, unique: true },
-    organization: { type: String, required: true, index: true },
     property: {
       type: String,
       default: "plots",
@@ -63,8 +67,8 @@ const ProjectSchema = new mongoose.Schema(
 );
 
 // Indexes
-ProjectSchema.index({ organization: 1, product_id: 1 });
-ProjectSchema.index({ organization: 1, name: 1 });
+ProjectSchema.index({ product_id: 1 });
+ProjectSchema.index({ name: 1 });
 
 const Project = mongoose.model("Project", ProjectSchema);
 

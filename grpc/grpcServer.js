@@ -30,18 +30,18 @@ const spProto = grpc.loadPackageDefinition(packageDefinition).sp;
 async function getUsers(call, callback) {
   try {
     const { organization } = call.request;
-    const users = await userService.getAllUsers(organization || undefined);
+    const users = await userService.getAllUsers();
 
     const usersData = users.map((u) => ({
-      id: u._id.toString(),
-      name: u.name,
-      email: u.email,
+      id: u._id?.toString() || "",
+      name: u.name || "",
+      email: u.email || "",
       phone: u.phone || "",
-      role: u.role,
+      role: u.role || "",
       organization: u.organization || "",
-      isActive: u.isActive,
-      createdAt: u.createdAt?.toISOString() || "",
-      updatedAt: u.updatedAt?.toISOString() || "",
+      isActive: u.isActive !== false,
+      createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : (u.createdAt || ""),
+      updatedAt: u.updatedAt instanceof Date ? u.updatedAt.toISOString() : (u.updatedAt || ""),
       profile_id: u.profile_id || 0,
     }));
 
@@ -94,31 +94,30 @@ async function getUser(call, callback) {
 
 async function getProjects(call, callback) {
   try {
-    const { organization } = call.request;
-    if (!organization) {
-      return callback({
-        code: grpc.status.INVALID_ARGUMENT,
-        message: "Organization is required",
-      });
+    const projects = await projectService.getAllProjects();
+
+    const projectsData = [];
+    for (const p of projects) {
+      try {
+        projectsData.push({
+          id: p._id.toString(),
+          product_id: p.product_id,
+          organization: p.organization,
+          property: p.property || "",
+          name: p.name,
+          location: p.location || "",
+          layoutImages: p.layoutImages || [],
+          status: p.status,
+          createdAt: p.createdAt?.toISOString() || "",
+          phaseCount: p.phaseCount || 0,
+          totalPlots: p.totalPlots || 0,
+          bookedCount: p.bookedCount || 0,
+          cornerPlots: p.cornerPlots || 0,
+        });
+      } catch (mapErr) {
+        console.error(`Skipping project ${p.name || "unknown"} due to mapping error:`, mapErr.message);
+      }
     }
-
-    const projects = await projectService.getAllProjects(organization);
-
-    const projectsData = projects.map((p) => ({
-      id: p._id.toString(),
-      product_id: p.product_id,
-      organization: p.organization,
-      property: p.property || "",
-      name: p.name,
-      location: p.location || "",
-      layoutImages: p.layoutImages || [],
-      status: p.status,
-      createdAt: p.createdAt?.toISOString() || "",
-      phaseCount: p.phaseCount || 0,
-      totalPlots: p.totalPlots || 0,
-      bookedCount: p.bookedCount || 0,
-      cornerPlots: p.cornerPlots || 0,
-    }));
 
     callback(null, {
       success: true,
@@ -172,7 +171,7 @@ async function getProject(call, callback) {
 async function getCampaigns(call, callback) {
   try {
     const { organization } = call.request;
-    const campaigns = await campaignService.getAllCampaigns(organization);
+    const campaigns = await campaignService.getAllCampaigns();
     
     const campaignsData = campaigns.map(c => ({
       id: c._id.toString(),
@@ -244,7 +243,7 @@ async function getCampaign(call, callback) {
 async function getLeadCaptureConfigs(call, callback) {
   try {
     const { organization } = call.request;
-    const configs = await leadCaptureService.getAllConfigs(organization);
+    const configs = await leadCaptureService.getAllConfigs();
     
     const configsData = configs.map(c => ({
       id: c._id.toString(),

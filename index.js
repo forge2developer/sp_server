@@ -12,6 +12,8 @@ import campaignRoutes from "./routes/campaign.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import grpcRoutes from "./routes/grpc.routes.js";
+import sourceRoutes from "./routes/source.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 import { startGrpcServer } from "./grpc/grpcServer.js";
 
 dotenv.config();
@@ -39,6 +41,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/lead-capture-configs", leadCaptureConfigRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/grpc", grpcRoutes);
+app.use("/api/sources", sourceRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Error Handling
 app.use(errorHandler);

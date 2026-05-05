@@ -1,11 +1,9 @@
 import LeadCaptureConfig from "../models/leadCaptureConfig.model.js";
 import { AppError } from "../middleware/errorHandler.js";
 
-// ─── Get All Configs (filtered by organization) ────────────────────────────────
-export const getAllConfigs = async (organization) => {
-  const filter = {};
-  if (organization) filter.organization = organization;
-  return LeadCaptureConfig.find(filter)
+// ─── Get All Configs ─────────────────────────────────────────────────────────────
+export const getAllConfigs = async () => {
+  return LeadCaptureConfig.find({})
     .populate("project_ids", "name product_id")
     .sort({ createdAt: -1 });
 };

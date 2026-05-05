@@ -9,8 +9,7 @@ const asyncHandler = (fn) => (req, res, next) =>
 
 // ─── GET /api/users ────────────────────────────────────────────────────────────
 export const getUsers = asyncHandler(async (req, res) => {
-  const { organization } = req.query;
-  const users = await userService.getAllUsers(organization);
+  const users = await userService.getAllUsers();
   res.status(200).json({
     success: true,
     count: users.length,
@@ -53,5 +52,30 @@ export const deleteUser = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "User deactivated successfully",
+  });
+});
+// ─── POST /api/users/change-password ──────────────────────────────────────────
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide current and new passwords",
+    });
+  }
+
+  if (!req.user || !req.user._id) {
+    return res.status(401).json({
+      success: false,
+      message: "Not authorized",
+    });
+  }
+
+  await userService.changePassword(req.user.email, currentPassword, newPassword);
+
+  res.status(200).json({
+    success: true,
+    message: "Password updated successfully",
   });
 });

@@ -6,8 +6,8 @@ const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
 // ─── Generate JWT Token ──────────────────────────────────────────────────────
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (id, email) => {
+  return jwt.sign({ id, email }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 };
@@ -45,7 +45,7 @@ export const loginUser = asyncHandler(async (req, res) => {
       email: user.email,
       role: user.role,
       organization: user.organization,
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.email),
     },
   });
 });
@@ -54,9 +54,8 @@ export const loginUser = asyncHandler(async (req, res) => {
 // @route   GET /api/auth/me
 // @access  Private
 export const getMe = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id).select("-password");
   res.status(200).json({
     success: true,
-    data: user,
+    data: req.user,
   });
 });

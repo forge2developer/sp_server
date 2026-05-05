@@ -5,24 +5,22 @@ import { moveToProjectFolder } from "../middleware/upload.js";
 class ProjectService {
   /**
    * Create a new project with auto-incremented product_id.
-   * Handles moving temp-uploaded images to the final project folder.
    */
   async addProject(data, tempFilePaths = []) {
-    const { name, organization } = data;
+    const { name } = data;
 
     // 1. Duplicate check (case-insensitive)
     const existing = await Project.findOne({
-      organization,
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
       status: "active",
     });
 
     if (existing) {
-      throw new AppError(`Project "${name}" already exists in this organization`, 409);
+      throw new AppError(`Project "${name}" already exists`, 409);
     }
 
     // 2. Auto-generate product_id
-    const lastProject = await Project.findOne({ organization })
+    const lastProject = await Project.findOne()
       .sort({ product_id: -1 })
       .select("product_id");
 
@@ -46,11 +44,10 @@ class ProjectService {
 
   /**
    * Get all active projects with summary stats via aggregation.
-   * Counts total plots and booked plots across all phases.
    */
-  async getAllProjects(organization) {
+  async getAllProjects() {
     return Project.aggregate([
-      { $match: { organization, status: "active" } },
+      { $match: { status: "active" } },
       {
         $project: {
           product_id: 1,
@@ -121,9 +118,8 @@ class ProjectService {
   /**
    * Get full project by product_id
    */
-  async getProjectById(organization, productId) {
+  async getProjectById(productId) {
     const project = await Project.findOne({
-      organization,
       product_id: parseInt(productId),
     });
     if (!project) throw new AppError("Project not found", 404);
@@ -133,10 +129,10 @@ class ProjectService {
   /**
    * Book a plot within a phase
    */
-  async bookPlot(organization, productId, payload) {
+  async bookPlot(productId, payload) {
     const { phaseId, plotId, leadName, leadUuid, profileId, phone, userId, userName } = payload;
 
-    const project = await Project.findOne({ organization, product_id: parseInt(productId) });
+    const project = await Project.findOne({ product_id: parseInt(productId) });
     if (!project) throw new AppError("Project not found", 404);
 
     const phase = project.phases.find((p) => p.phaseId === phaseId);
@@ -164,8 +160,8 @@ class ProjectService {
   /**
    * Reverse a plot booking
    */
-  async reverseBooking(organization, productId, { phaseId, plotId }) {
-    const project = await Project.findOne({ organization, product_id: parseInt(productId) });
+  async reverseBooking(productId, { phaseId, plotId }) {
+    const project = await Project.findOne({ product_id: parseInt(productId) });
     if (!project) throw new AppError("Project not found", 404);
 
     const phase = project.phases.find((p) => p.phaseId === phaseId);
@@ -185,8 +181,8 @@ class ProjectService {
   /**
    * Get all booked plots across all phases for a project
    */
-  async getProjectBookedPlots(organization, productId) {
-    const project = await this.getProjectById(organization, productId);
+  async getProjectBookedPlots(productId) {
+    const project = await this.getProjectById(productId);
     const bookedItems = [];
 
     project.phases.forEach((phase) => {
@@ -209,10 +205,37 @@ class ProjectService {
   }
 
   /**
+   * Get all booked plots across all active projects
+   */
+  async getAllBookedPlotsAcrossProjects() {
+    const projects = await Project.find({ status: "active" });
+    const allBooked = [];
+
+    projects.forEach((project) => {
+      project.phases.forEach((phase) => {
+        phase.plots.forEach((plot) => {
+          if (plot.status === "booked") {
+            allBooked.push({
+              id: plot.plotId,
+              label: `${phase.phaseName} - Plot ${plot.plotNumber}`,
+              type: "plot",
+              bookedBy: plot.bookedBy,
+              project_name: project.name,
+              project_id: project.product_id,
+            });
+          }
+        });
+      });
+    });
+
+    return allBooked;
+  }
+
+  /**
    * Update project details including images
    */
-  async updateProject(organization, productId, data, tempFilePaths = []) {
-    const project = await Project.findOne({ organization, product_id: parseInt(productId) });
+  async updateProject(productId, data, tempFilePaths = []) {
+    const project = await Project.findOne({ product_id: parseInt(productId) });
     if (!project) throw new AppError("Project not found", 404);
 
     // 1. Handle phases parsing
@@ -223,11 +246,10 @@ class ProjectService {
     // 2. Handle image updates
     let existingImages = [];
     if (data.existingImages) {
-      existingImages = typeof data.existingImages === "string" 
-        ? JSON.parse(data.existingImages) 
+      existingImages = typeof data.existingImages === "string"
+        ? JSON.parse(data.existingImages)
         : data.existingImages;
-      
-      // Clean existing images to store only relative paths if they contain the full URL
+
       existingImages = existingImages.map(img => {
         if (img.includes("/uploads/")) {
           return "/uploads/" + img.split("/uploads/")[1];
@@ -241,7 +263,6 @@ class ProjectService {
       newImages = moveToProjectFolder(tempFilePaths, project.name);
     }
 
-    // Combine existing and new images
     data.layoutImages = [...existingImages, ...newImages];
 
     // 3. Update fields
@@ -258,8 +279,8 @@ class ProjectService {
   /**
    * Soft delete a project
    */
-  async deleteProject(organization, productId) {
-    const project = await Project.findOne({ organization, product_id: parseInt(productId) });
+  async deleteProject(productId) {
+    const project = await Project.findOne({ product_id: parseInt(productId) });
     if (!project) throw new AppError("Project not found", 404);
 
     project.status = "deleted";

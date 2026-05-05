@@ -1,8 +1,8 @@
 import Campaign from "../models/campaign.model.js";
 import { AppError } from "../middleware/errorHandler.js";
 
-export const getAllCampaigns = async (organization) => {
-  return Campaign.find({ organization }).sort({ createdAt: -1 });
+export const getAllCampaigns = async () => {
+  return Campaign.find({}).sort({ createdAt: -1 });
 };
 
 export const getCampaignById = async (id) => {

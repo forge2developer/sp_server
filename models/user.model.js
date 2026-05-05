@@ -1,8 +1,13 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const UserSchema = new mongoose.Schema(
   {
+    _id: {
+      type: String,
+      default: () => crypto.randomUUID(),
+    },
     profile_id: {
       type: Number,
       unique: true,
@@ -41,11 +46,6 @@ const UserSchema = new mongoose.Schema(
         message: "Role must be 'user', 'manager', or 'admin'",
       },
       default: "user",
-    },
-    organization: {
-      type: String,
-      trim: true,
-      default: "SP_PROMOTERS",
     },
     isActive: {
       type: Boolean,
@@ -86,6 +86,6 @@ UserSchema.statics.findByEmail = function (email) {
   return this.findOne({ email: email.toLowerCase(), isActive: true }).select("+password");
 };
 
-const User = mongoose.model("User", UserSchema);
+const User = mongoose.model("User", UserSchema, "users");
 
 export default User;

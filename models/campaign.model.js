@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const SubSourceSchema = new mongoose.Schema({
-  uuid: { type: String },
+  uuid: { 
+    type: String,
+    default: () => crypto.randomUUID()
+  },
   subSourceName: { type: String, required: true },
   project: {
     projectId: { type: String },
@@ -9,17 +13,19 @@ const SubSourceSchema = new mongoose.Schema({
 });
 
 const SourceConfigSchema = new mongoose.Schema({
-  uuid: { type: String },
+  uuid: { 
+    type: String,
+    default: () => crypto.randomUUID()
+  },
   sourceName: { type: String, required: true },
   subSources: [SubSourceSchema],
 });
 
 const CampaignSchema = new mongoose.Schema(
   {
-    organization: {
+    _id: {
       type: String,
-      required: true,
-      trim: true,
+      default: () => crypto.randomUUID(),
     },
     campaignName: {
       type: String,
