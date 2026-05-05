@@ -209,20 +209,44 @@ class ProjectService {
   }
 
   /**
-   * Update project details
+   * Update project details including images
    */
-  async updateProject(organization, productId, data) {
+  async updateProject(organization, productId, data, tempFilePaths = []) {
     const project = await Project.findOne({ organization, product_id: parseInt(productId) });
     if (!project) throw new AppError("Project not found", 404);
 
-    // Handle phases parsing if needed
+    // 1. Handle phases parsing
     if (typeof data.phases === "string") {
       data.phases = JSON.parse(data.phases);
     }
 
-    // Update fields
+    // 2. Handle image updates
+    let existingImages = [];
+    if (data.existingImages) {
+      existingImages = typeof data.existingImages === "string" 
+        ? JSON.parse(data.existingImages) 
+        : data.existingImages;
+      
+      // Clean existing images to store only relative paths if they contain the full URL
+      existingImages = existingImages.map(img => {
+        if (img.includes("/uploads/")) {
+          return "/uploads/" + img.split("/uploads/")[1];
+        }
+        return img;
+      });
+    }
+
+    let newImages = [];
+    if (tempFilePaths.length > 0) {
+      newImages = moveToProjectFolder(tempFilePaths, project.name);
+    }
+
+    // Combine existing and new images
+    data.layoutImages = [...existingImages, ...newImages];
+
+    // 3. Update fields
     Object.keys(data).forEach((key) => {
-      if (data[key] !== undefined) {
+      if (data[key] !== undefined && key !== "existingImages") {
         project[key] = data[key];
       }
     });

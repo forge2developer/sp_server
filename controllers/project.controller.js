@@ -76,7 +76,14 @@ export const getProjectBookedPlots = asyncHandler(async (req, res) => {
 // ─── PUT /api/projects/:id ────────────────────────────────────────────────────
 export const updateProject = asyncHandler(async (req, res) => {
   const { organization } = req.body;
-  const project = await projectService.updateProject(organization, req.params.id, req.body);
+  const tempFilePaths = req.files ? req.files.map((f) => f.path) : [];
+
+  const project = await projectService.updateProject(
+    organization,
+    req.params.id,
+    req.body,
+    tempFilePaths
+  );
   res.status(200).json({
     success: true,
     message: "Project updated successfully",

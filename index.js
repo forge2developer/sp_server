@@ -9,6 +9,7 @@ import projectRoutes from "./routes/project.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import leadCaptureConfigRoutes from "./routes/leadCaptureConfig.routes.js";
 import campaignRoutes from "./routes/campaign.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import grpcRoutes from "./routes/grpc.routes.js";
 import { startGrpcServer } from "./grpc/grpcServer.js";
@@ -34,6 +35,7 @@ app.get("/", (req, res) => {
 app.use("/api/leads", leadRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/lead-capture-configs", leadCaptureConfigRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/grpc", grpcRoutes);
