@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const leadSchema = new mongoose.Schema(
     {
+        _id: {
+            type: String,
+            default: () => crypto.randomUUID(),
+        },
         name: {
             type: String,
             required: [true, "Lead name is required"],
@@ -9,7 +14,6 @@ const leadSchema = new mongoose.Schema(
         },
         email: {
             type: String,
-            required: [true, "Email is required"],
             trim: true,
             lowercase: true,
         },
@@ -17,18 +21,32 @@ const leadSchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
-        company: {
+        source: {
+            type: String,
+            default: "Direct",
+        },
+        sub_source: {
             type: String,
             trim: true,
+        },
+        campaign: {
+            type: String,
+            trim: true,
+        },
+        project_ids: {
+            type: [String],
+            ref: "Project",
+            default: [],
+        },
+        config_id: {
+            type: String,
+            ref: "LeadCaptureConfig",
+            default: null,
         },
         status: {
             type: String,
             enum: ["New", "Contacted", "Qualified", "Proposal", "Negotiation", "Closed Won", "Closed Lost"],
             default: "New",
-        },
-        source: {
-            type: String,
-            default: "Direct",
         },
         value: {
             type: Number,
@@ -38,12 +56,18 @@ const leadSchema = new mongoose.Schema(
             type: String,
         },
         assignedTo: {
-            type: String, // Can be refined to a User reference later
+            type: String,
             default: "Unassigned",
+        },
+        requirement_data: {
+            type: Map,
+            of: String,
+            default: {},
         },
     },
     {
         timestamps: true,
+        strict: false,
     }
 );
 
