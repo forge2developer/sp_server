@@ -5,7 +5,7 @@ import crypto from "crypto";
 const UserSchema = new mongoose.Schema(
   {
     _id: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       default: () => crypto.randomUUID(),
     },
     profile_id: {

@@ -4,7 +4,7 @@ import crypto from "crypto";
 const leadSchema = new mongoose.Schema(
     {
         _id: {
-            type: String,
+            type: mongoose.Schema.Types.Mixed,
             default: () => crypto.randomUUID(),
         },
         name: {
@@ -64,6 +64,12 @@ const leadSchema = new mongoose.Schema(
             of: String,
             default: {},
         },
+        assignedUserId: {
+            type: mongoose.Schema.Types.Mixed,
+            ref: "User"
+        },
+        campaign: String,
+        sub_source: String,
     },
     {
         timestamps: true,

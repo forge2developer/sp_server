@@ -12,6 +12,43 @@ const generateToken = (id, email) => {
   });
 };
 
+// @desc    Register a new user
+// @route   POST /api/auth/register
+// @access  Public
+export const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role, organization } = req.body;
+
+  const userExists = await User.findByEmail(email);
+
+  if (userExists) {
+    throw new AppError("User already exists", 400);
+  }
+
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role,
+    organization,
+  });
+
+  if (user) {
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        organization: user.organization,
+        token: generateToken(user._id, user.email),
+      },
+    });
+  } else {
+    throw new AppError("Invalid user data", 400);
+  }
+});
+
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
