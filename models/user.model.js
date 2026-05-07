@@ -1,18 +1,7 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
 
 const UserSchema = new mongoose.Schema(
   {
-    _id: {
-      type: mongoose.Schema.Types.Mixed,
-      default: () => crypto.randomUUID(),
-    },
-    profile_id: {
-      type: Number,
-      unique: true,
-      sparse: true, // Allow nulls if not provided initially
-    },
     name: {
       type: String,
       required: [true, "Name is required"],
@@ -28,11 +17,6 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Please enter a valid email address"],
     },
-    phone: {
-      type: String,
-      trim: true,
-      default: "",
-    },
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -42,8 +26,8 @@ const UserSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ["user", "manager", "admin"],
-        message: "Role must be 'user', 'manager', or 'admin'",
+        values: ["user", "admin"],
+        message: "Role must be either 'user' or 'admin'",
       },
       default: "user",
     },
@@ -57,6 +41,7 @@ const UserSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // adds createdAt & updatedAt automatically
+    collection: "user",
     toJSON: {
       transform(doc, ret) {
         delete ret.password; // strip password from JSON output
@@ -67,18 +52,9 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-// ─── Pre-save Hook: Hash Password ─────────────────────────────────────────────
-UserSchema.pre("save", async function () {
-  // Only hash when password field is actually modified
-  if (!this.isModified("password")) return;
-
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
-});
-
-// ─── Instance Method: Compare Password ────────────────────────────────────────
-UserSchema.methods.matchPassword = async function (enteredPassword) {
-  return bcrypt.compare(enteredPassword, this.password);
+// ─── Instance Method: Compare Password (plain-text, temporary) ────────────────
+UserSchema.methods.matchPassword = function (enteredPassword) {
+  return enteredPassword === this.password;
 };
 
 // ─── Static Method: Find Active User by Email ─────────────────────────────────
@@ -86,6 +62,6 @@ UserSchema.statics.findByEmail = function (email) {
   return this.findOne({ email: email.toLowerCase(), isActive: true }).select("+password");
 };
 
-const User = mongoose.model("User", UserSchema, "users");
+const User = mongoose.model("user", UserSchema);
 
 export default User;
