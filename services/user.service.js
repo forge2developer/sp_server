@@ -5,7 +5,7 @@ import { AppError } from "../middleware/errorHandler.js";
 
 // ─── Get All Users ─────────────────────────────────────────────────────────────
 export const getAllUsers = async () => {
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
   const rawUsers = await col.find({}).sort({ createdAt: -1 }).toArray();
 
   // Map raw docs to plain objects compatible with gRPC
@@ -24,7 +24,7 @@ export const getAllUsers = async () => {
 
 // ─── Get User by ID ────────────────────────────────────────────────────────────
 export const getUserById = async (id) => {
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
   
   // Try as string first
   let raw = await col.findOne({ _id: id });
@@ -55,7 +55,7 @@ export const createUser = async (data) => {
 
   if (!email) throw new AppError("Email is required", 400);
 
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
 
   // Check for duplicate email
   const existing = await col.findOne({ email: email.toLowerCase() });
@@ -81,7 +81,7 @@ export const createUser = async (data) => {
 export const updateUser = async (id, data) => {
   delete data.password;
 
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
   
   // Try string _id first, then ObjectId fallback
   let filter = { _id: id };
@@ -100,7 +100,7 @@ export const updateUser = async (id, data) => {
 
 // ─── Hard Delete User ──────────────────────────────────────────────────────────
 export const deleteUser = async (id) => {
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
 
   let filter = { _id: id };
   let existing = await col.findOne(filter);
@@ -140,7 +140,7 @@ export const changePassword = async (userEmail, currentPassword, newPassword) =>
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
   // Use raw collection update to completely bypass Mongoose UUID casting errors
-  await mongoose.connection.collection("users").updateOne(
+  await mongoose.connection.collection("user").updateOne(
     { email: user.email },
     { $set: { password: hashedPassword, updatedAt: new Date() } }
   );

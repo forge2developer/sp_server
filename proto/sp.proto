@@ -12,7 +12,6 @@ service UserService {
 }
 
 message GetUsersRequest {
-  string organization = 1;
 }
 
 message GetUsersResponse {
@@ -35,8 +34,8 @@ message UserData {
   string name = 2;
   string email = 3;
   string phone = 4;
+  // Role of the user
   string role = 5;
-  string organization = 6;
   bool isActive = 7;
   string createdAt = 8;
   int32 profile_id = 9;
@@ -53,7 +52,6 @@ service ProjectService {
 }
 
 message GetProjectsRequest {
-  string organization = 1;
 }
 
 message GetProjectsResponse {
@@ -63,7 +61,6 @@ message GetProjectsResponse {
 }
 
 message GetProjectRequest {
-  string organization = 1;
   string id = 2;
 }
 
@@ -75,7 +72,6 @@ message ProjectResponse {
 message ProjectData {
   string id = 1;
   int32 product_id = 2;
-  string organization = 3;
   string property = 4;
   string name = 5;
   string location = 6;
@@ -97,7 +93,6 @@ service CampaignService {
 }
 
 message GetCampaignsRequest {
-  string organization = 1;
 }
 
 message GetCampaignsResponse {
@@ -118,7 +113,6 @@ message CampaignResponse {
 message CampaignData {
   string id = 1;
   string campaignName = 2;
-  string organization = 3;
   string status = 4;
   string createdAt = 5;
   int32 sourceCount = 6;
@@ -147,7 +141,6 @@ service AutomationService {
 }
 
 message GetLeadCaptureConfigsRequest {
-  string organization = 1;
 }
 
 message GetLeadCaptureConfigsResponse {
@@ -168,7 +161,6 @@ message LeadCaptureConfigResponse {
 message LeadCaptureConfigData {
   string id = 1;
   string name = 2;
-  string organization = 3;
   string source = 4;
   string status = 5;
   string createdAt = 6;

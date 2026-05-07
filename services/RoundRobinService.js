@@ -5,13 +5,12 @@ import RoundRobinState from "../models/RoundRobinState.js";
 class RoundRobinService {
   /**
    * Get the next user for assignment based on the provided context (e.g., a specific form config or global).
-   * @param {string} organization 
    * @param {string} context 
    * @param {Array} candidateIds - Optional: restrict rotation to these user IDs
    */
-  async getNextUser(organization, context = "global", candidateIds = null) {
+  async getNextUser(context = "global", candidateIds = null) {
     try {
-      console.log(`[RoundRobin] Context: ${context}, Organization: ${organization}, CandidateCount: ${candidateIds?.length || 0}`);
+      console.log(`[RoundRobin] Context: ${context}, CandidateCount: ${candidateIds?.length || 0}`);
       let eligibleUsers;
 
       if (candidateIds && candidateIds.length > 0) {
@@ -29,28 +28,35 @@ class RoundRobinService {
           isActive: { $ne: false }
         }).sort({ createdAt: 1 });
       } else {
-        // Global rotation (all active executives)
+        // Global rotation: Find ALL active users regardless of role to ensure no one is missed
         eligibleUsers = await User.find({
-          organization,
-          role: { $in: ["Executive", "Sales", "Admin", "executive", "sales", "admin"] },
           isActive: { $ne: false }
         }).sort({ createdAt: 1 });
       }
 
-      console.log(`[RoundRobin] Found ${eligibleUsers?.length || 0} eligible users`);
+      // DEBUG: Log every single user found to see why someone might be missing
+      console.log(`[RoundRobin] Total users in DB query: ${eligibleUsers.length}`);
+      eligibleUsers.forEach((u, i) => {
+        console.log(`  ${i}: ID=${u._id}, Name=${u.name}, Role=${u.role}, Active=${u.isActive}`);
+      });
+
+      const foundNames = eligibleUsers.map(u => u.name || "Unnamed").join(", ");
+      console.log(`[RoundRobin] Eligible names: [${foundNames}]`);
       if (!eligibleUsers || eligibleUsers.length === 0) {
         return null;
       }
 
       // Atomic increment of the index for this context
       const state = await RoundRobinState.findOneAndUpdate(
-        { organization, context },
+        { context },
         { $inc: { last_assigned_index: 1 } },
         { upsert: true, new: true }
       );
 
       const nextIndex = state.last_assigned_index % eligibleUsers.length;
-      return eligibleUsers[nextIndex];
+      const assignedUser = eligibleUsers[nextIndex];
+      console.log(`[RoundRobin] Assigning index ${nextIndex} (Total: ${eligibleUsers.length}). User: ${assignedUser.name}`);
+      return assignedUser;
     } catch (error) {
       console.error("Round-Robin Error:", error);
       return null;

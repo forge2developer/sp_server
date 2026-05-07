@@ -12,6 +12,40 @@ router.post("/", async (req, res) => {
   try {
     console.log("POST /api/leads - Body:", JSON.stringify(req.body, null, 2));
     const { config_id, ...leadData } = req.body;
+
+    // 0. De-duplication Logic: Check if lead with this phone already exists
+    if (leadData.phone) {
+      const existingLead = await Lead.findOne({ phone: leadData.phone });
+      if (existingLead) {
+        console.log(`[LeadRoute] Duplicate detected for phone ${leadData.phone}. Updating lead ${existingLead._id}`);
+        
+        // Update existing lead details
+        existingLead.status = "Re-engaged";
+        if (leadData.requirement_data) {
+          // Safely merge new requirements into the existing Map
+          Object.entries(leadData.requirement_data).forEach(([key, value]) => {
+            if (value) existingLead.requirement_data.set(key, String(value));
+          });
+        }
+        
+        // Update source/campaign if provided
+        if (leadData.source) existingLead.source = leadData.source;
+        if (leadData.campaign) existingLead.campaign = leadData.campaign;
+        
+        await existingLead.save();
+
+        // Log re-engagement activity
+        await LeadActivity.create({
+          lead_id: existingLead._id,
+          stage: "Re-engagement",
+          updates: `Lead re-engaged via ${leadData.source || "Direct"}`,
+          notes: `Campaign: ${leadData.campaign || "N/A"}. Automatically marked as Re-engaged.`
+        });
+
+        return res.status(200).json(existingLead);
+      }
+    }
+
     let assignedTo = leadData.assignedTo || "Unassigned";
     let assignedUserId = null;
 
@@ -27,7 +61,6 @@ router.post("/", async (req, res) => {
       if (config) {
         const candidateIds = config.assigned_people?.map(p => p.id).filter(id => !!id);
         nextUser = await RoundRobinService.getNextUser(
-          leadData.organization || "SP_PROMOTERS",
           config_id,
           candidateIds
         );
@@ -36,12 +69,15 @@ router.post("/", async (req, res) => {
 
     // 2. Fallback to Global Round-Robin if no user assigned yet
     if (!nextUser) {
-      nextUser = await RoundRobinService.getNextUser(leadData.organization || "SP_PROMOTERS", "global");
+      nextUser = await RoundRobinService.getNextUser("global");
     }
 
     if (nextUser) {
+      console.log(`[LeadRoute] Round-Robin Success: Assigned to ${nextUser.name} (${nextUser._id})`);
       assignedUserId = nextUser._id;
       assignedTo = nextUser.name || `${nextUser.profile?.firstName} ${nextUser.profile?.lastName}`;
+    } else {
+      console.warn(`[LeadRoute] Round-Robin Failed: No user assigned. nextUser was null.`);
     }
 
     const lead = new Lead({ 

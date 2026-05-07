@@ -272,6 +272,10 @@ class ProjectService {
       }
     });
 
+    if (data.phases) {
+      project.markModified("phases");
+    }
+
     await project.save();
     return project;
   }
