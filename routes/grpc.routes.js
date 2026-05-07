@@ -12,13 +12,10 @@ import {
 
 const router = Router();
 
-// ... existing user and project routes ...
-
-// ─── GET /api/grpc/campaigns?organization=SP_PROMOTERS ─────────────────────────
+// ─── GET /api/grpc/campaigns ────────────────────────────────────────────────────
 router.get("/campaigns", async (req, res) => {
   try {
-    const { organization } = req.query;
-    const response = await fetchCampaigns(organization);
+    const response = await fetchCampaigns();
     res.status(200).json({
       success: response.success,
       count: response.count,
@@ -44,11 +41,10 @@ router.get("/campaigns/:id", async (req, res) => {
   }
 });
 
-// ─── GET /api/grpc/lead-capture-configs?organization=SP_PROMOTERS ──────────────
+// ─── GET /api/grpc/lead-capture-configs ────────────────────────────────────────
 router.get("/lead-capture-configs", async (req, res) => {
   try {
-    const { organization } = req.query;
-    const response = await fetchLeadCaptureConfigs(organization);
+    const response = await fetchLeadCaptureConfigs();
     res.status(200).json({
       success: response.success,
       count: response.count,
@@ -74,19 +70,23 @@ router.get("/lead-capture-configs/:id", async (req, res) => {
   }
 });
 
-// ─── GET /api/grpc/users?organization=SP_PROMOTERS ─────────────────────────────
+// ─── GET /api/grpc/users ────────────────────────────────────────────────────────
 router.get("/users", async (req, res) => {
   try {
-    const { organization } = req.query;
-    const response = await fetchUsers(organization);
+    console.log("[gRPC Gateway] Fetching all users");
+    const response = await fetchUsers();
     res.status(200).json({
       success: response.success,
       count: response.count,
       data: response.users,
     });
   } catch (err) {
-    console.error("gRPC gateway /users error:", err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("gRPC gateway /users error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message,
+      details: err.details || "No extra details"
+    });
   }
 });
 
@@ -99,19 +99,15 @@ router.get("/users/:id", async (req, res) => {
       data: response.user,
     });
   } catch (err) {
-    const status = err.code === 5 ? 404 : 500; // grpc NOT_FOUND = 5
+    const status = err.code === 5 ? 404 : 500;
     res.status(status).json({ success: false, message: err.message });
   }
 });
 
-// ─── GET /api/grpc/projects?organization=SP_PROMOTERS ──────────────────────────
+// ─── GET /api/grpc/projects ─────────────────────────────────────────────────────
 router.get("/projects", async (req, res) => {
   try {
-    const { organization } = req.query;
-    if (!organization) {
-      return res.status(400).json({ success: false, message: "Organization is required" });
-    }
-    const response = await fetchProjects(organization);
+    const response = await fetchProjects();
     res.status(200).json({
       success: response.success,
       count: response.count,
@@ -123,11 +119,10 @@ router.get("/projects", async (req, res) => {
   }
 });
 
-// ─── GET /api/grpc/projects/:id?organization=SP_PROMOTERS ──────────────────────
+// ─── GET /api/grpc/projects/:id ────────────────────────────────────────────────
 router.get("/projects/:id", async (req, res) => {
   try {
-    const { organization } = req.query;
-    const response = await fetchProject(organization, req.params.id);
+    const response = await fetchProject(req.params.id);
     res.status(200).json({
       success: response.success,
       data: response.project,

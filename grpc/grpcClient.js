@@ -57,32 +57,32 @@ function grpcCall(client, method, request) {
 // Exported functions for use in routes
 // ═══════════════════════════════════════════════════════════
 
-export async function fetchUsers(organization) {
-  return grpcCall(userClient, "GetUsers", { organization: organization || "" });
+export async function fetchUsers() {
+  return grpcCall(userClient, "GetUsers", {});
 }
 
 export async function fetchUser(id) {
   return grpcCall(userClient, "GetUser", { id });
 }
 
-export async function fetchProjects(organization) {
-  return grpcCall(projectClient, "GetProjects", { organization });
+export async function fetchProjects() {
+  return grpcCall(projectClient, "GetProjects", {});
 }
 
-export async function fetchProject(organization, id) {
-  return grpcCall(projectClient, "GetProject", { organization, id });
+export async function fetchProject(id) {
+  return grpcCall(projectClient, "GetProject", { id });
 }
 
-export async function fetchCampaigns(organization) {
-  return grpcCall(campaignClient, "GetCampaigns", { organization });
+export async function fetchCampaigns() {
+  return grpcCall(campaignClient, "GetCampaigns", {});
 }
 
 export async function fetchCampaign(id) {
   return grpcCall(campaignClient, "GetCampaign", { id });
 }
 
-export async function fetchLeadCaptureConfigs(organization) {
-  return grpcCall(automationClient, "GetLeadCaptureConfigs", { organization });
+export async function fetchLeadCaptureConfigs() {
+  return grpcCall(automationClient, "GetLeadCaptureConfigs", {});
 }
 
 export async function fetchLeadCaptureConfig(id) {

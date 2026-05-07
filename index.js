@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import morgan from "morgan";
 import dotenv from "dotenv";
 import path from "path";
 import connectDB from "./config/db.js";
@@ -12,6 +13,8 @@ import campaignRoutes from "./routes/campaign.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import grpcRoutes from "./routes/grpc.routes.js";
+import sourceRoutes from "./routes/source.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 import { startGrpcServer } from "./grpc/grpcServer.js";
 
 dotenv.config();
@@ -21,6 +24,7 @@ const app = express();
 
 // Middleware
 app.use(cors());
+app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,6 +43,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/lead-capture-configs", leadCaptureConfigRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/grpc", grpcRoutes);
+app.use("/api/sources", sourceRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Error Handling
 app.use(errorHandler);
@@ -51,4 +57,4 @@ app.listen(PORT, () => {
 });
 
 // Start gRPC server for data fetching
-startGrpcServer(GRPC_PORT);
+startGrpcServer(GRPC_PORT);

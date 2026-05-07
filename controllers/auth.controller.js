@@ -6,11 +6,48 @@ const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
 // ─── Generate JWT Token ──────────────────────────────────────────────────────
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (id, email) => {
+  return jwt.sign({ id, email }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 };
+
+// @desc    Register a new user
+// @route   POST /api/auth/register
+// @access  Public
+export const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role, organization } = req.body;
+
+  const userExists = await User.findByEmail(email);
+
+  if (userExists) {
+    throw new AppError("User already exists", 400);
+  }
+
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role,
+    organization,
+  });
+
+  if (user) {
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        organization: user.organization,
+        token: generateToken(user._id, user.email),
+      },
+    });
+  } else {
+    throw new AppError("Invalid user data", 400);
+  }
+});
 
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
@@ -45,7 +82,7 @@ export const loginUser = asyncHandler(async (req, res) => {
       email: user.email,
       role: user.role,
       organization: user.organization,
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.email),
     },
   });
 });
@@ -54,9 +91,8 @@ export const loginUser = asyncHandler(async (req, res) => {
 // @route   GET /api/auth/me
 // @access  Private
 export const getMe = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id).select("-password");
   res.status(200).json({
     success: true,
-    data: user,
+    data: req.user,
   });
 });

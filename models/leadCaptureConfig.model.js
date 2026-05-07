@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const LeadCaptureConfigSchema = new mongoose.Schema(
   {
-    organization: {
-      type: String,
-      required: [true, "Organization is required"],
-      trim: true,
+    _id: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => crypto.randomUUID(),
     },
     name: {
       type: String,
@@ -26,7 +26,7 @@ const LeadCaptureConfigSchema = new mongoose.Schema(
       trim: true,
     },
     project_ids: {
-      type: [mongoose.Schema.Types.ObjectId],
+      type: [String],
       ref: "Project",
       default: [],
     },

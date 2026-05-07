@@ -5,8 +5,7 @@ const asyncHandler = (fn) => (req, res, next) =>
 
 // ─── GET /api/lead-capture-configs ─────────────────────────────────────────────
 export const getConfigs = asyncHandler(async (req, res) => {
-  const { organization } = req.query;
-  const configs = await configService.getAllConfigs(organization);
+  const configs = await configService.getAllConfigs();
   res.status(200).json({
     success: true,
     count: configs.length,

@@ -4,8 +4,7 @@ const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
 export const getCampaigns = asyncHandler(async (req, res) => {
-  const { organization } = req.query;
-  const campaigns = await campaignService.getAllCampaigns(organization);
+  const campaigns = await campaignService.getAllCampaigns();
   res.status(200).json({ success: true, count: campaigns.length, data: campaigns });
 });
 
