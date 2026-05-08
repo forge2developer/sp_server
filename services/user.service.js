@@ -26,10 +26,20 @@ export const getAllUsers = async () => {
 export const getUserById = async (id) => {
   const col = mongoose.connection.collection("user");
   
-  // Try as string first
+  // Try multiple lookup formats due to mixed ID types (UUID vs String vs ObjectId)
   let raw = await col.findOne({ _id: id });
 
-  // Fallback: try as ObjectId
+  // Fallback 1: Binary UUID
+  if (!raw && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    try {
+      // Use mongoose.mongo.Binary to handle subtype 4 UUIDs
+      const { Binary } = mongoose.mongo;
+      const uuidBinary = Binary.createFromHexString(id.replace(/-/g, ""), Binary.SUBTYPE_UUID);
+      raw = await col.findOne({ _id: uuidBinary });
+    } catch (e) { /* ignore */ }
+  }
+
+  // Fallback 2: ObjectId
   if (!raw && /^[a-f0-9]{24}$/.test(id)) {
     raw = await col.findOne({ _id: new mongoose.Types.ObjectId(id) });
   }
@@ -83,9 +93,17 @@ export const updateUser = async (id, data) => {
 
   const col = mongoose.connection.collection("user");
   
-  // Try string _id first, then ObjectId fallback
+  // Find correct filter format
   let filter = { _id: id };
   let existing = await col.findOne(filter);
+
+  if (!existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    const { Binary } = mongoose.mongo;
+    const uuidBinary = Binary.createFromHexString(id.replace(/-/g, ""), Binary.SUBTYPE_UUID);
+    filter = { _id: uuidBinary };
+    existing = await col.findOne(filter);
+  }
+
   if (!existing && /^[a-f0-9]{24}$/.test(id)) {
     filter = { _id: new mongoose.Types.ObjectId(id) };
     existing = await col.findOne(filter);
@@ -104,6 +122,14 @@ export const deleteUser = async (id) => {
 
   let filter = { _id: id };
   let existing = await col.findOne(filter);
+
+  if (!existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    const { Binary } = mongoose.mongo;
+    const uuidBinary = Binary.createFromHexString(id.replace(/-/g, ""), Binary.SUBTYPE_UUID);
+    filter = { _id: uuidBinary };
+    existing = await col.findOne(filter);
+  }
+
   if (!existing && /^[a-f0-9]{24}$/.test(id)) {
     filter = { _id: new mongoose.Types.ObjectId(id) };
     existing = await col.findOne(filter);

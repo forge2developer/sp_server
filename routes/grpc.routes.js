@@ -7,7 +7,10 @@ import {
   fetchCampaigns,
   fetchCampaign,
   fetchLeadCaptureConfigs,
-  fetchLeadCaptureConfig
+  fetchLeadCaptureConfig,
+  fetchLeads,
+  fetchLead,
+  fetchLeadActivities
 } from "../grpc/grpcClient.js";
 
 const router = Router();
@@ -130,6 +133,50 @@ router.get("/projects/:id", async (req, res) => {
   } catch (err) {
     const status = err.code === 5 ? 404 : 500;
     res.status(status).json({ success: false, message: err.message });
+  }
+});
+
+// ─── GET /api/grpc/leads ────────────────────────────────────────────────────────
+router.get("/leads", async (req, res) => {
+  try {
+    const response = await fetchLeads();
+    res.status(200).json({
+      success: response.success,
+      count: response.count,
+      data: response.leads,
+    });
+  } catch (err) {
+    console.error("gRPC gateway /leads error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ─── GET /api/grpc/leads/:id ───────────────────────────────────────────────────
+router.get("/leads/:id", async (req, res) => {
+  try {
+    const response = await fetchLead(req.params.id);
+    res.status(200).json({
+      success: response.success,
+      data: response.lead,
+    });
+  } catch (err) {
+    const status = err.code === 5 ? 404 : 500;
+    res.status(status).json({ success: false, message: err.message });
+  }
+});
+
+// ─── GET /api/grpc/leads/:id/activities ──────────────────────────────────────
+router.get("/leads/:id/activities", async (req, res) => {
+  try {
+    const response = await fetchLeadActivities(req.params.id);
+    res.status(200).json({
+      success: response.success,
+      count: response.count,
+      data: response.activities,
+    });
+  } catch (err) {
+    console.error("gRPC gateway /leads/:id/activities error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

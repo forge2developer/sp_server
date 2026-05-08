@@ -188,3 +188,62 @@ message KeyValue {
   string key = 1;
   string value = 2;
 }
+
+// ═══════════════════════════════════════════════════════════
+// Lead Service
+// ═══════════════════════════════════════════════════════════
+
+service LeadService {
+  rpc GetLeads (GetLeadsRequest) returns (GetLeadsResponse);
+  rpc GetLead (GetLeadRequest) returns (LeadResponse);
+  rpc GetLeadActivities (GetLeadRequest) returns (GetLeadActivitiesResponse);
+}
+
+message GetLeadsRequest {
+}
+
+message GetLeadsResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated LeadData leads = 3;
+}
+
+message GetLeadRequest {
+  string id = 1;
+}
+
+message LeadResponse {
+  bool success = 1;
+  LeadData lead = 2;
+}
+
+message GetLeadActivitiesResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated LeadActivityData activities = 3;
+}
+
+message LeadActivityData {
+  string id = 1;
+  string type = 2;
+  string content = 3;
+  string user_name = 4;
+  string createdAt = 5;
+}
+
+message LeadData {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string source = 5;
+  string sub_source = 6;
+  string campaign = 7;
+  string status = 8;
+  float value = 9;
+  string assignedTo = 10;
+  string assignedUserId = 11;
+  string createdAt = 12;
+  string updatedAt = 13;
+  repeated string project_ids = 14;
+}

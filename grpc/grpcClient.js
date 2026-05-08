@@ -41,6 +41,11 @@ const automationClient = new spProto.AutomationService(
   grpc.credentials.createInsecure()
 );
 
+const leadClient = new spProto.LeadService(
+  GRPC_HOST,
+  grpc.credentials.createInsecure()
+);
+
 /**
  * Promisify a gRPC unary call
  */
@@ -87,4 +92,16 @@ export async function fetchLeadCaptureConfigs() {
 
 export async function fetchLeadCaptureConfig(id) {
   return grpcCall(automationClient, "GetLeadCaptureConfig", { id });
+}
+
+export async function fetchLeads() {
+  return grpcCall(leadClient, "GetLeads", {});
+}
+
+export async function fetchLead(id) {
+  return grpcCall(leadClient, "GetLead", { id });
+}
+
+export async function fetchLeadActivities(id) {
+  return grpcCall(leadClient, "GetLeadActivities", { id });
 }

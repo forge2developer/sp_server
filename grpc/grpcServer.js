@@ -6,6 +6,7 @@ import * as userService from "../services/user.service.js";
 import { projectService } from "../services/project.service.js";
 import * as campaignService from "../services/campaign.service.js";
 import * as leadCaptureService from "../services/leadCaptureConfig.service.js";
+import * as leadService from "../services/lead.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -312,6 +313,99 @@ async function getLeadCaptureConfig(call, callback) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Lead Service Implementations
+// ═══════════════════════════════════════════════════════════
+
+async function getLeads(call, callback) {
+  try {
+    const leads = await leadService.getAllLeads();
+    
+    const leadsData = leads.map(l => ({
+      id: l._id.toString(),
+      name: l.name,
+      email: l.email || "",
+      phone: l.phone || "",
+      source: l.source || "",
+      sub_source: l.sub_source || "",
+      campaign: l.campaign || "",
+      status: l.status,
+      value: l.value || 0,
+      assignedTo: l.assignedTo || "",
+      assignedUserId: l.assignedUserId || "",
+      createdAt: l.createdAt?.toISOString() || "",
+      updatedAt: l.updatedAt?.toISOString() || "",
+      project_ids: l.project_ids || []
+    }));
+
+    callback(null, {
+      success: true,
+      count: leadsData.length,
+      leads: leadsData
+    });
+  } catch (err) {
+    console.error("gRPC GetLeads error:", err.message);
+    callback({ code: grpc.status.INTERNAL, message: err.message });
+  }
+}
+
+async function getLead(call, callback) {
+  try {
+    const { id } = call.request;
+    const lead = await leadService.getLeadById(id);
+    
+    callback(null, {
+      success: true,
+      lead: {
+        id: lead._id.toString(),
+        name: lead.name,
+        email: lead.email || "",
+        phone: lead.phone || "",
+        source: lead.source || "",
+        sub_source: lead.sub_source || "",
+        campaign: lead.campaign || "",
+        status: lead.status,
+        value: lead.value || 0,
+        assignedTo: lead.assignedTo || "",
+        assignedUserId: lead.assignedUserId || "",
+        createdAt: lead.createdAt?.toISOString() || "",
+        updatedAt: lead.updatedAt?.toISOString() || "",
+        project_ids: lead.project_ids || []
+      }
+    });
+  } catch (err) {
+    console.error("gRPC GetLead error:", err.message);
+    callback({
+      code: err.statusCode === 404 ? grpc.status.NOT_FOUND : grpc.status.INTERNAL,
+      message: err.message
+    });
+  }
+}
+
+async function getLeadActivities(call, callback) {
+  try {
+    const { id } = call.request;
+    const activities = await leadService.getLeadActivities(id);
+    
+    const activitiesData = activities.map(a => ({
+      id: a._id.toString(),
+      type: a.stage || "",
+      content: a.updates || "",
+      user_name: a.user_name || "System",
+      createdAt: a.createdAt?.toISOString() || ""
+    }));
+
+    callback(null, {
+      success: true,
+      count: activitiesData.length,
+      activities: activitiesData
+    });
+  } catch (err) {
+    console.error("gRPC GetLeadActivities error:", err.message);
+    callback({ code: grpc.status.INTERNAL, message: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // Start gRPC Server
 // ═══════════════════════════════════════════════════════════
 
@@ -336,6 +430,12 @@ export function startGrpcServer(port = 50051) {
   server.addService(spProto.AutomationService.service, {
     GetLeadCaptureConfigs: getLeadCaptureConfigs,
     GetLeadCaptureConfig: getLeadCaptureConfig,
+  });
+
+  server.addService(spProto.LeadService.service, {
+    GetLeads: getLeads,
+    GetLead: getLead,
+    GetLeadActivities: getLeadActivities,
   });
 
   server.bindAsync(
