@@ -12,16 +12,15 @@ export const getAllLeads = async () => {
         name: l.name || "",
         email: l.email || "",
         phone: l.phone || "",
-        source: l.source || "",
-        sub_source: l.sub_source || "",
-        campaign: l.campaign || "",
+
         status: l.status || "New",
         value: l.value || 0,
         assignedTo: l.assignedTo || "Unassigned",
         assignedUserId: l.assignedUserId?.toString() || "",
         createdAt: l.createdAt || new Date(),
         updatedAt: l.updatedAt || new Date(),
-        project_ids: l.project_ids || []
+        project_ids: l.project_ids || [],
+        campaign_responses: l.campaign_responses || []
     }));
 };
 
@@ -41,16 +40,15 @@ export const getLeadById = async (id) => {
         name: lead.name || "",
         email: lead.email || "",
         phone: lead.phone || "",
-        source: lead.source || "",
-        sub_source: lead.sub_source || "",
-        campaign: lead.campaign || "",
+
         status: lead.status || "New",
         value: lead.value || 0,
         assignedTo: lead.assignedTo || "Unassigned",
         assignedUserId: lead.assignedUserId?.toString() || "",
         createdAt: lead.createdAt || new Date(),
         updatedAt: lead.updatedAt || new Date(),
-        project_ids: lead.project_ids || []
+        project_ids: lead.project_ids || [],
+        campaign_responses: lead.campaign_responses || []
     };
 };
 

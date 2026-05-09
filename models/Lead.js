@@ -21,18 +21,7 @@ const leadSchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
-        source: {
-            type: String,
-            default: "Direct",
-        },
-        sub_source: {
-            type: String,
-            trim: true,
-        },
-        campaign: {
-            type: String,
-            trim: true,
-        },
+
         project_ids: {
             type: [String],
             ref: "Project",
@@ -68,8 +57,16 @@ const leadSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.Mixed,
             ref: "User"
         },
-        campaign: String,
-        sub_source: String,
+        campaign_responses: [{
+            campaign: String,
+            source: String,
+            sub_source: String,
+            project: String,
+            engagedAt: {
+                type: Date,
+                default: Date.now
+            }
+        }],
     },
     {
         timestamps: true,

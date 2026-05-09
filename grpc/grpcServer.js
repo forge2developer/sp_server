@@ -325,16 +325,20 @@ async function getLeads(call, callback) {
       name: l.name,
       email: l.email || "",
       phone: l.phone || "",
-      source: l.source || "",
-      sub_source: l.sub_source || "",
-      campaign: l.campaign || "",
       status: l.status,
       value: l.value || 0,
       assignedTo: l.assignedTo || "",
       assignedUserId: l.assignedUserId || "",
       createdAt: l.createdAt?.toISOString() || "",
       updatedAt: l.updatedAt?.toISOString() || "",
-      project_ids: l.project_ids || []
+      project_ids: l.project_ids || [],
+      campaign_responses: (l.campaign_responses || l.reengagement_history || []).map(r => ({
+        campaign: r.campaign || "",
+        source: r.source || "",
+        sub_source: r.sub_source || "",
+        project: r.project || "",
+        engagedAt: r.engagedAt instanceof Date ? r.engagedAt.toISOString() : (r.engagedAt || "")
+      }))
     }));
 
     callback(null, {
@@ -360,16 +364,20 @@ async function getLead(call, callback) {
         name: lead.name,
         email: lead.email || "",
         phone: lead.phone || "",
-        source: lead.source || "",
-        sub_source: lead.sub_source || "",
-        campaign: lead.campaign || "",
         status: lead.status,
         value: lead.value || 0,
         assignedTo: lead.assignedTo || "",
         assignedUserId: lead.assignedUserId || "",
         createdAt: lead.createdAt?.toISOString() || "",
         updatedAt: lead.updatedAt?.toISOString() || "",
-        project_ids: lead.project_ids || []
+        project_ids: lead.project_ids || [],
+        campaign_responses: (lead.campaign_responses || lead.reengagement_history || []).map(r => ({
+          campaign: r.campaign || "",
+          source: r.source || "",
+          sub_source: r.sub_source || "",
+          project: r.project || "",
+          engagedAt: r.engagedAt instanceof Date ? r.engagedAt.toISOString() : (r.engagedAt || "")
+        }))
       }
     });
   } catch (err) {

@@ -231,14 +231,19 @@ message LeadActivityData {
   string createdAt = 5;
 }
 
+message ReengagementEntry {
+  string campaign = 1;
+  string source = 2;
+  string sub_source = 3;
+  string engagedAt = 4;
+  string project = 5;
+}
+
 message LeadData {
   string id = 1;
   string name = 2;
   string email = 3;
   string phone = 4;
-  string source = 5;
-  string sub_source = 6;
-  string campaign = 7;
   string status = 8;
   float value = 9;
   string assignedTo = 10;
@@ -246,4 +251,5 @@ message LeadData {
   string createdAt = 12;
   string updatedAt = 13;
   repeated string project_ids = 14;
+  repeated ReengagementEntry campaign_responses = 15;
 }

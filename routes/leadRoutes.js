@@ -28,10 +28,21 @@ router.post("/", async (req, res) => {
           });
         }
         
-        // Update source/campaign if provided
-        if (leadData.source) existingLead.source = leadData.source;
-        if (leadData.campaign) existingLead.campaign = leadData.campaign;
+        // Update source/campaign and SAVE to history
+        const newResponse = {
+          campaign: leadData.campaign || "None",
+          source: leadData.source || "Direct",
+          sub_source: leadData.sub_source || "",
+          project: leadData.requirement_data?.interested_projects || leadData.interested_projects || "None",
+          engagedAt: new Date()
+        };
+
+        if (!existingLead.campaign_responses || !Array.isArray(existingLead.campaign_responses)) {
+            existingLead.campaign_responses = [];
+        }
         
+        existingLead.campaign_responses.push(newResponse);
+
         await existingLead.save();
 
         // Log re-engagement activity
@@ -39,7 +50,7 @@ router.post("/", async (req, res) => {
           lead_id: existingLead._id,
           stage: "Re-engagement",
           updates: `Lead re-engaged via ${leadData.source || "Direct"}`,
-          notes: `Campaign: ${leadData.campaign || "N/A"}. Automatically marked as Re-engaged.`
+          notes: `Campaign: ${leadData.campaign || "N/A"}. Total responses: ${existingLead.campaign_responses.length}.`
         });
 
         return res.status(200).json(existingLead);
@@ -84,7 +95,13 @@ router.post("/", async (req, res) => {
       ...leadData, 
       assignedTo, 
       assignedUserId,
-      source: leadData.source || "Direct"
+      campaign_responses: [{
+        campaign: leadData.campaign || "None",
+        source: leadData.source || "Direct",
+        sub_source: leadData.sub_source || "",
+        project: leadData.requirement_data?.interested_projects || leadData.interested_projects || "None",
+        engagedAt: new Date()
+      }]
     });
     
     const savedLead = await lead.save();
@@ -151,6 +168,29 @@ router.put("/:id", async (req, res) => {
 
     if (!oldLead) {
       return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // Check if campaign/source details changed and push to history
+    const lastResponse = oldLead.campaign_responses && oldLead.campaign_responses.length > 0 ? oldLead.campaign_responses[oldLead.campaign_responses.length - 1] : {};
+    const hasCampaignChange = 
+      (req.body.campaign && req.body.campaign !== lastResponse.campaign) ||
+      (req.body.source && req.body.source !== lastResponse.source) ||
+      (req.body.sub_source && req.body.sub_source !== lastResponse.sub_source);
+
+    if (hasCampaignChange) {
+      const newResponse = {
+        campaign: req.body.campaign || lastResponse.campaign || "None",
+        source: req.body.source || lastResponse.source || "Direct",
+        sub_source: req.body.sub_source || lastResponse.sub_source || "",
+        engagedAt: new Date()
+      };
+
+      if (!oldLead.campaign_responses || !Array.isArray(oldLead.campaign_responses)) {
+        oldLead.campaign_responses = [];
+      }
+      
+      oldLead.campaign_responses.push(newResponse);
+      req.body.campaign_responses = oldLead.campaign_responses;
     }
 
     // Update lead
