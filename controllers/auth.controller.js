@@ -16,9 +16,9 @@ const generateToken = (id, email) => {
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role, organization } = req.body;
+  const { name, email, password, role } = req.body;
 
-  const userExists = await User.findByEmail(email);
+  const userExists = await User.findOne({ email: email.toLowerCase() });
 
   if (userExists) {
     throw new AppError("User already exists", 400);
@@ -29,7 +29,6 @@ export const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
     role,
-    organization,
   });
 
   if (user) {
@@ -40,7 +39,6 @@ export const registerUser = asyncHandler(async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        organization: user.organization,
         token: generateToken(user._id, user.email),
       },
     });
@@ -54,26 +52,30 @@ export const registerUser = asyncHandler(async (req, res) => {
 // @access  Public
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  console.log("login req data:giriiii ", req.body);
 
-  if (!email || !password) {
-    throw new AppError("Please provide email and password", 400);
-  }
+  // if (!email || !password) {
+  //   throw new AppError("Please provide email and password", 400);
+  // }
 
-  // 1. Find user by email (explicitly select password)
+  // Find user by email (explicitly select password)
   const user = await User.findByEmail(email);
 
   if (!user) {
     throw new AppError("Invalid email or password", 401);
   }
 
-  // 2. Check if password matches
-  const isMatch = await user.matchPassword(password);
+  // Check if password matches
+  const isMatch = user.matchPassword(password);
 
   if (!isMatch) {
     throw new AppError("Invalid email or password", 401);
   }
 
-  // 3. Return user data and token
+  // Update last login
+  await User.updateOne({ email: user.email }, { lastLogin: Date.now() });
+
+  // Return user data and token
   res.status(200).json({
     success: true,
     data: {
@@ -81,7 +83,6 @@ export const loginUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      organization: user.organization,
       token: generateToken(user._id, user.email),
     },
   });

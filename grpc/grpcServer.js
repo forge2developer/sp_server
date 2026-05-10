@@ -6,6 +6,7 @@ import * as userService from "../services/user.service.js";
 import { projectService } from "../services/project.service.js";
 import * as campaignService from "../services/campaign.service.js";
 import * as leadCaptureService from "../services/leadCaptureConfig.service.js";
+import * as leadService from "../services/lead.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,7 +30,6 @@ const spProto = grpc.loadPackageDefinition(packageDefinition).sp;
 
 async function getUsers(call, callback) {
   try {
-    const { organization } = call.request;
     const users = await userService.getAllUsers();
 
     const usersData = users.map((u) => ({
@@ -38,7 +38,6 @@ async function getUsers(call, callback) {
       email: u.email || "",
       phone: u.phone || "",
       role: u.role || "",
-      organization: u.organization || "",
       isActive: u.isActive !== false,
       createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : (u.createdAt || ""),
       updatedAt: u.updatedAt instanceof Date ? u.updatedAt.toISOString() : (u.updatedAt || ""),
@@ -72,7 +71,6 @@ async function getUser(call, callback) {
         email: user.email,
         phone: user.phone || "",
         role: user.role,
-        organization: user.organization || "",
         isActive: user.isActive,
         createdAt: user.createdAt?.toISOString() || "",
         updatedAt: user.updatedAt?.toISOString() || "",
@@ -102,7 +100,6 @@ async function getProjects(call, callback) {
         projectsData.push({
           id: p._id.toString(),
           product_id: p.product_id,
-          organization: p.organization,
           property: p.property || "",
           name: p.name,
           location: p.location || "",
@@ -135,15 +132,14 @@ async function getProjects(call, callback) {
 
 async function getProject(call, callback) {
   try {
-    const { organization, id } = call.request;
-    const project = await projectService.getProjectById(organization, id);
+    const { id } = call.request;
+    const project = await projectService.getProjectById(id);
 
     callback(null, {
       success: true,
       project: {
         id: project._id.toString(),
         product_id: project.product_id,
-        organization: project.organization,
         property: project.property || "",
         name: project.name,
         location: project.location || "",
@@ -170,13 +166,11 @@ async function getProject(call, callback) {
 
 async function getCampaigns(call, callback) {
   try {
-    const { organization } = call.request;
     const campaigns = await campaignService.getAllCampaigns();
     
     const campaignsData = campaigns.map(c => ({
       id: c._id.toString(),
       campaignName: c.campaignName,
-      organization: c.organization,
       status: c.status,
       createdAt: c.createdAt?.toISOString() || "",
       sourceCount: c.sources?.length || 0,
@@ -212,7 +206,6 @@ async function getCampaign(call, callback) {
       data: {
         id: campaign._id.toString(),
         campaignName: campaign.campaignName,
-        organization: campaign.organization,
         status: campaign.status,
         createdAt: campaign.createdAt?.toISOString() || "",
         sourceCount: campaign.sources?.length || 0,
@@ -242,13 +235,11 @@ async function getCampaign(call, callback) {
 
 async function getLeadCaptureConfigs(call, callback) {
   try {
-    const { organization } = call.request;
     const configs = await leadCaptureService.getAllConfigs();
     
     const configsData = configs.map(c => ({
       id: c._id.toString(),
       name: c.name,
-      organization: c.organization,
       source: c.source || "",
       status: c.status,
       createdAt: c.createdAt?.toISOString() || "",
@@ -291,7 +282,6 @@ async function getLeadCaptureConfig(call, callback) {
       data: {
         id: config._id.toString(),
         name: config.name,
-        organization: config.organization,
         source: config.source || "",
         status: config.status,
         createdAt: config.createdAt?.toISOString() || "",
@@ -323,6 +313,107 @@ async function getLeadCaptureConfig(call, callback) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Lead Service Implementations
+// ═══════════════════════════════════════════════════════════
+
+async function getLeads(call, callback) {
+  try {
+    const leads = await leadService.getAllLeads();
+    
+    const leadsData = leads.map(l => ({
+      id: l._id.toString(),
+      name: l.name,
+      email: l.email || "",
+      phone: l.phone || "",
+      status: l.status,
+      value: l.value || 0,
+      assignedTo: l.assignedTo || "",
+      assignedUserId: l.assignedUserId || "",
+      createdAt: l.createdAt?.toISOString() || "",
+      updatedAt: l.updatedAt?.toISOString() || "",
+      project_ids: l.project_ids || [],
+      campaign_responses: (l.campaign_responses || l.reengagement_history || []).map(r => ({
+        campaign: r.campaign || "",
+        source: r.source || "",
+        sub_source: r.sub_source || "",
+        project: r.project || "",
+        engagedAt: r.engagedAt instanceof Date ? r.engagedAt.toISOString() : (r.engagedAt || "")
+      }))
+    }));
+
+    callback(null, {
+      success: true,
+      count: leadsData.length,
+      leads: leadsData
+    });
+  } catch (err) {
+    console.error("gRPC GetLeads error:", err.message);
+    callback({ code: grpc.status.INTERNAL, message: err.message });
+  }
+}
+
+async function getLead(call, callback) {
+  try {
+    const { id } = call.request;
+    const lead = await leadService.getLeadById(id);
+    
+    callback(null, {
+      success: true,
+      lead: {
+        id: lead._id.toString(),
+        name: lead.name,
+        email: lead.email || "",
+        phone: lead.phone || "",
+        status: lead.status,
+        value: lead.value || 0,
+        assignedTo: lead.assignedTo || "",
+        assignedUserId: lead.assignedUserId || "",
+        createdAt: lead.createdAt?.toISOString() || "",
+        updatedAt: lead.updatedAt?.toISOString() || "",
+        project_ids: lead.project_ids || [],
+        campaign_responses: (lead.campaign_responses || lead.reengagement_history || []).map(r => ({
+          campaign: r.campaign || "",
+          source: r.source || "",
+          sub_source: r.sub_source || "",
+          project: r.project || "",
+          engagedAt: r.engagedAt instanceof Date ? r.engagedAt.toISOString() : (r.engagedAt || "")
+        }))
+      }
+    });
+  } catch (err) {
+    console.error("gRPC GetLead error:", err.message);
+    callback({
+      code: err.statusCode === 404 ? grpc.status.NOT_FOUND : grpc.status.INTERNAL,
+      message: err.message
+    });
+  }
+}
+
+async function getLeadActivities(call, callback) {
+  try {
+    const { id } = call.request;
+    const activities = await leadService.getLeadActivities(id);
+    
+    const activitiesData = activities.map(a => ({
+      id: a._id.toString(),
+      type: a.stage || "",
+      content: a.updates || "",
+      user_name: a.user_name || "System",
+      createdAt: a.createdAt?.toISOString() || ""
+    }));
+
+    callback(null, {
+      success: true,
+      count: activitiesData.length,
+      activities: activitiesData
+    });
+  } catch (err) {
+    console.error("gRPC GetLeadActivities error:", err.message);
+    callback({ code: grpc.status.INTERNAL, message: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // Start gRPC Server
 // ═══════════════════════════════════════════════════════════
 
@@ -347,6 +438,12 @@ export function startGrpcServer(port = 50051) {
   server.addService(spProto.AutomationService.service, {
     GetLeadCaptureConfigs: getLeadCaptureConfigs,
     GetLeadCaptureConfig: getLeadCaptureConfig,
+  });
+
+  server.addService(spProto.LeadService.service, {
+    GetLeads: getLeads,
+    GetLead: getLead,
+    GetLeadActivities: getLeadActivities,
   });
 
   server.bindAsync(

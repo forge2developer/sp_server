@@ -12,6 +12,51 @@ router.post("/", async (req, res) => {
   try {
     console.log("POST /api/leads - Body:", JSON.stringify(req.body, null, 2));
     const { config_id, ...leadData } = req.body;
+
+    // 0. De-duplication Logic: Check if lead with this phone already exists
+    if (leadData.phone) {
+      const existingLead = await Lead.findOne({ phone: leadData.phone });
+      if (existingLead) {
+        console.log(`[LeadRoute] Duplicate detected for phone ${leadData.phone}. Updating lead ${existingLead._id}`);
+        
+        // Update existing lead details
+        existingLead.status = "Re-engaged";
+        if (leadData.requirement_data) {
+          // Safely merge new requirements into the existing Map
+          Object.entries(leadData.requirement_data).forEach(([key, value]) => {
+            if (value) existingLead.requirement_data.set(key, String(value));
+          });
+        }
+        
+        // Update source/campaign and SAVE to history
+        const newResponse = {
+          campaign: leadData.campaign || "None",
+          source: leadData.source || "Direct",
+          sub_source: leadData.sub_source || "",
+          project: leadData.requirement_data?.interested_projects || leadData.interested_projects || "None",
+          engagedAt: new Date()
+        };
+
+        if (!existingLead.campaign_responses || !Array.isArray(existingLead.campaign_responses)) {
+            existingLead.campaign_responses = [];
+        }
+        
+        existingLead.campaign_responses.push(newResponse);
+
+        await existingLead.save();
+
+        // Log re-engagement activity
+        await LeadActivity.create({
+          lead_id: existingLead._id,
+          stage: "Re-engagement",
+          updates: `Lead re-engaged via ${leadData.source || "Direct"}`,
+          notes: `Campaign: ${leadData.campaign || "N/A"}. Total responses: ${existingLead.campaign_responses.length}.`
+        });
+
+        return res.status(200).json(existingLead);
+      }
+    }
+
     let assignedTo = leadData.assignedTo || "Unassigned";
     let assignedUserId = null;
 
@@ -27,7 +72,6 @@ router.post("/", async (req, res) => {
       if (config) {
         const candidateIds = config.assigned_people?.map(p => p.id).filter(id => !!id);
         nextUser = await RoundRobinService.getNextUser(
-          leadData.organization || "SP_PROMOTERS",
           config_id,
           candidateIds
         );
@@ -36,19 +80,28 @@ router.post("/", async (req, res) => {
 
     // 2. Fallback to Global Round-Robin if no user assigned yet
     if (!nextUser) {
-      nextUser = await RoundRobinService.getNextUser(leadData.organization || "SP_PROMOTERS", "global");
+      nextUser = await RoundRobinService.getNextUser("global");
     }
 
     if (nextUser) {
+      console.log(`[LeadRoute] Round-Robin Success: Assigned to ${nextUser.name} (${nextUser._id})`);
       assignedUserId = nextUser._id;
       assignedTo = nextUser.name || `${nextUser.profile?.firstName} ${nextUser.profile?.lastName}`;
+    } else {
+      console.warn(`[LeadRoute] Round-Robin Failed: No user assigned. nextUser was null.`);
     }
 
     const lead = new Lead({ 
       ...leadData, 
       assignedTo, 
       assignedUserId,
-      source: leadData.source || "Direct"
+      campaign_responses: [{
+        campaign: leadData.campaign || "None",
+        source: leadData.source || "Direct",
+        sub_source: leadData.sub_source || "",
+        project: leadData.requirement_data?.interested_projects || leadData.interested_projects || "None",
+        engagedAt: new Date()
+      }]
     });
     
     const savedLead = await lead.save();
@@ -115,6 +168,29 @@ router.put("/:id", async (req, res) => {
 
     if (!oldLead) {
       return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // Check if campaign/source details changed and push to history
+    const lastResponse = oldLead.campaign_responses && oldLead.campaign_responses.length > 0 ? oldLead.campaign_responses[oldLead.campaign_responses.length - 1] : {};
+    const hasCampaignChange = 
+      (req.body.campaign && req.body.campaign !== lastResponse.campaign) ||
+      (req.body.source && req.body.source !== lastResponse.source) ||
+      (req.body.sub_source && req.body.sub_source !== lastResponse.sub_source);
+
+    if (hasCampaignChange) {
+      const newResponse = {
+        campaign: req.body.campaign || lastResponse.campaign || "None",
+        source: req.body.source || lastResponse.source || "Direct",
+        sub_source: req.body.sub_source || lastResponse.sub_source || "",
+        engagedAt: new Date()
+      };
+
+      if (!oldLead.campaign_responses || !Array.isArray(oldLead.campaign_responses)) {
+        oldLead.campaign_responses = [];
+      }
+      
+      oldLead.campaign_responses.push(newResponse);
+      req.body.campaign_responses = oldLead.campaign_responses;
     }
 
     // Update lead

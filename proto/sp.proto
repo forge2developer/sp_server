@@ -12,7 +12,6 @@ service UserService {
 }
 
 message GetUsersRequest {
-  string organization = 1;
 }
 
 message GetUsersResponse {
@@ -35,8 +34,8 @@ message UserData {
   string name = 2;
   string email = 3;
   string phone = 4;
+  // Role of the user
   string role = 5;
-  string organization = 6;
   bool isActive = 7;
   string createdAt = 8;
   int32 profile_id = 9;
@@ -53,7 +52,6 @@ service ProjectService {
 }
 
 message GetProjectsRequest {
-  string organization = 1;
 }
 
 message GetProjectsResponse {
@@ -63,7 +61,6 @@ message GetProjectsResponse {
 }
 
 message GetProjectRequest {
-  string organization = 1;
   string id = 2;
 }
 
@@ -75,7 +72,6 @@ message ProjectResponse {
 message ProjectData {
   string id = 1;
   int32 product_id = 2;
-  string organization = 3;
   string property = 4;
   string name = 5;
   string location = 6;
@@ -97,7 +93,6 @@ service CampaignService {
 }
 
 message GetCampaignsRequest {
-  string organization = 1;
 }
 
 message GetCampaignsResponse {
@@ -118,7 +113,6 @@ message CampaignResponse {
 message CampaignData {
   string id = 1;
   string campaignName = 2;
-  string organization = 3;
   string status = 4;
   string createdAt = 5;
   int32 sourceCount = 6;
@@ -147,7 +141,6 @@ service AutomationService {
 }
 
 message GetLeadCaptureConfigsRequest {
-  string organization = 1;
 }
 
 message GetLeadCaptureConfigsResponse {
@@ -168,7 +161,6 @@ message LeadCaptureConfigResponse {
 message LeadCaptureConfigData {
   string id = 1;
   string name = 2;
-  string organization = 3;
   string source = 4;
   string status = 5;
   string createdAt = 6;
@@ -195,4 +187,69 @@ message AssignedPerson {
 message KeyValue {
   string key = 1;
   string value = 2;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Lead Service
+// ═══════════════════════════════════════════════════════════
+
+service LeadService {
+  rpc GetLeads (GetLeadsRequest) returns (GetLeadsResponse);
+  rpc GetLead (GetLeadRequest) returns (LeadResponse);
+  rpc GetLeadActivities (GetLeadRequest) returns (GetLeadActivitiesResponse);
+}
+
+message GetLeadsRequest {
+}
+
+message GetLeadsResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated LeadData leads = 3;
+}
+
+message GetLeadRequest {
+  string id = 1;
+}
+
+message LeadResponse {
+  bool success = 1;
+  LeadData lead = 2;
+}
+
+message GetLeadActivitiesResponse {
+  bool success = 1;
+  int32 count = 2;
+  repeated LeadActivityData activities = 3;
+}
+
+message LeadActivityData {
+  string id = 1;
+  string type = 2;
+  string content = 3;
+  string user_name = 4;
+  string createdAt = 5;
+}
+
+message ReengagementEntry {
+  string campaign = 1;
+  string source = 2;
+  string sub_source = 3;
+  string engagedAt = 4;
+  string project = 5;
+}
+
+message LeadData {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string status = 8;
+  float value = 9;
+  string assignedTo = 10;
+  string assignedUserId = 11;
+  string createdAt = 12;
+  string updatedAt = 13;
+  repeated string project_ids = 14;
+  repeated ReengagementEntry campaign_responses = 15;
 }
