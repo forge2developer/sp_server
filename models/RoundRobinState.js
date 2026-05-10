@@ -2,11 +2,6 @@ import mongoose from "mongoose";
 
 const roundRobinStateSchema = new mongoose.Schema(
   {
-    organization: {
-      type: String,
-      required: true,
-      default: "SP_PROMOTERS",
-    },
     last_assigned_index: {
       type: Number,
       default: -1,
@@ -21,8 +16,8 @@ const roundRobinStateSchema = new mongoose.Schema(
   }
 );
 
-// Unique index on organization and context
-roundRobinStateSchema.index({ organization: 1, context: 1 }, { unique: true });
+// Unique index on context
+roundRobinStateSchema.index({ context: 1 }, { unique: true });
 
 const RoundRobinState = mongoose.model("RoundRobinState", roundRobinStateSchema);
 

@@ -5,7 +5,7 @@ import { AppError } from "../middleware/errorHandler.js";
 
 // ─── Get All Users ─────────────────────────────────────────────────────────────
 export const getAllUsers = async () => {
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
   const rawUsers = await col.find({}).sort({ createdAt: -1 }).toArray();
 
   // Map raw docs to plain objects compatible with gRPC
@@ -24,12 +24,22 @@ export const getAllUsers = async () => {
 
 // ─── Get User by ID ────────────────────────────────────────────────────────────
 export const getUserById = async (id) => {
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
   
-  // Try as string first
+  // Try multiple lookup formats due to mixed ID types (UUID vs String vs ObjectId)
   let raw = await col.findOne({ _id: id });
 
-  // Fallback: try as ObjectId
+  // Fallback 1: Binary UUID
+  if (!raw && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    try {
+      // Use mongoose.mongo.Binary to handle subtype 4 UUIDs
+      const { Binary } = mongoose.mongo;
+      const uuidBinary = Binary.createFromHexString(id.replace(/-/g, ""), Binary.SUBTYPE_UUID);
+      raw = await col.findOne({ _id: uuidBinary });
+    } catch (e) { /* ignore */ }
+  }
+
+  // Fallback 2: ObjectId
   if (!raw && /^[a-f0-9]{24}$/.test(id)) {
     raw = await col.findOne({ _id: new mongoose.Types.ObjectId(id) });
   }
@@ -55,7 +65,7 @@ export const createUser = async (data) => {
 
   if (!email) throw new AppError("Email is required", 400);
 
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
 
   // Check for duplicate email
   const existing = await col.findOne({ email: email.toLowerCase() });
@@ -81,11 +91,19 @@ export const createUser = async (data) => {
 export const updateUser = async (id, data) => {
   delete data.password;
 
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
   
-  // Try string _id first, then ObjectId fallback
+  // Find correct filter format
   let filter = { _id: id };
   let existing = await col.findOne(filter);
+
+  if (!existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    const { Binary } = mongoose.mongo;
+    const uuidBinary = Binary.createFromHexString(id.replace(/-/g, ""), Binary.SUBTYPE_UUID);
+    filter = { _id: uuidBinary };
+    existing = await col.findOne(filter);
+  }
+
   if (!existing && /^[a-f0-9]{24}$/.test(id)) {
     filter = { _id: new mongoose.Types.ObjectId(id) };
     existing = await col.findOne(filter);
@@ -100,10 +118,18 @@ export const updateUser = async (id, data) => {
 
 // ─── Hard Delete User ──────────────────────────────────────────────────────────
 export const deleteUser = async (id) => {
-  const col = mongoose.connection.collection("users");
+  const col = mongoose.connection.collection("user");
 
   let filter = { _id: id };
   let existing = await col.findOne(filter);
+
+  if (!existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    const { Binary } = mongoose.mongo;
+    const uuidBinary = Binary.createFromHexString(id.replace(/-/g, ""), Binary.SUBTYPE_UUID);
+    filter = { _id: uuidBinary };
+    existing = await col.findOne(filter);
+  }
+
   if (!existing && /^[a-f0-9]{24}$/.test(id)) {
     filter = { _id: new mongoose.Types.ObjectId(id) };
     existing = await col.findOne(filter);
@@ -140,7 +166,7 @@ export const changePassword = async (userEmail, currentPassword, newPassword) =>
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
   // Use raw collection update to completely bypass Mongoose UUID casting errors
-  await mongoose.connection.collection("users").updateOne(
+  await mongoose.connection.collection("user").updateOne(
     { email: user.email },
     { $set: { password: hashedPassword, updatedAt: new Date() } }
   );
